@@ -10,10 +10,26 @@ set(script)
 set(suite)
 set(tests)
 
+cmake_parse_arguments(
+  "properties"
+  ""
+  "WORKING_DIRECTORY"
+  "ENVIRONMENT"
+  ${properties}
+)
+if(properties_WORKING_DIRECTORY)
+  set(TEST_WORKING_DIR ${properties_WORKING_DIRECTORY})
+endif()
+if(properties_ENVIRONMENT)
+  set(env_setter ${CMAKE_COMMAND} -E env ${properties_ENVIRONMENT})
+endif()
+
 function(add_command NAME)
   set(_args "")
   foreach(_arg ${ARGN})
-    if(_arg MATCHES "[^-./:a-zA-Z0-9_]")
+    if(_arg MATCHES "^\\[=*\\[.*\\]=*\\]$")
+      set(_args "${_args} ${_arg}")
+    elseif(_arg MATCHES "[^-./:a-zA-Z0-9_]")
       set(_args "${_args} [==[${_arg}]==]") # form a bracket_argument
     else()
       set(_args "${_args} ${_arg}")
@@ -29,7 +45,7 @@ if(NOT EXISTS "${TEST_EXECUTABLE}")
   )
 endif()
 execute_process(
-  COMMAND ${TEST_EXECUTOR} "${TEST_EXECUTABLE}" ${spec} --list-test-names-only
+  COMMAND ${env_setter} ${TEST_EXECUTOR} "${TEST_EXECUTABLE}" ${spec} --list-test-names-only
   OUTPUT_VARIABLE output
   RESULT_VARIABLE result
 )
@@ -38,7 +54,7 @@ if(${result} EQUAL 0)
   message(WARNING
     "Test executable '${TEST_EXECUTABLE}' contains no tests!\n"
   )
-elseif(${result} LESS 0)
+elseif(${result} LESS 0 OR NOT output)
   message(FATAL_ERROR
     "Error running test executable '${TEST_EXECUTABLE}':\n"
     "  Result: ${result}\n"
@@ -65,7 +81,8 @@ foreach(line ${output})
     "${prefix}${test}${suffix}"
     PROPERTIES
     WORKING_DIRECTORY "${TEST_WORKING_DIR}"
-    ${properties}
+    ENVIRONMENT "[==[${properties_ENVIRONMENT}]==]"
+    ${properties_UNPARSED_ARGUMENTS}
   )
   list(APPEND tests "${prefix}${test}${suffix}")
 endforeach()
