@@ -143,7 +143,7 @@ function(catch_discover_tests TARGET)
     "if(EXISTS \"${ctest_tests_file}\")\n"
     "  include(\"${ctest_tests_file}\")\n"
     "else()\n"
-    "  add_test(${TARGET}_NOT_BUILT-${args_hash} ${TARGET}_NOT_BUILT-${args_hash})\n"
+    "  add_test(${_TEST_PREFIX}/${TARGET}_NOT_BUILT-${args_hash} ${TARGET}_NOT_BUILT-${args_hash})\n"
     "endif()\n"
   )
 
